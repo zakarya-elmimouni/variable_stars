@@ -1,16 +1,13 @@
-
 import numpy as np
 
 from sklearn.preprocessing import FunctionTransformer
 from sklearn.compose import make_column_transformer
 from sklearn.pipeline import make_pipeline
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.impute import SimpleImputer
+from sklearn.impute import KNNImputer
 from xgboost import XGBClassifier
 from collections import Counter
 from imblearn.ensemble import BalancedRandomForestClassifier
-from sklearn.impute import KNNImputer
-from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.preprocessing import LabelEncoder
 
 def fold_time_series(time_point, period, div_period):
     return (time_point -
@@ -72,15 +69,26 @@ transformer = make_column_transformer(
     ('passthrough', cols)
 )
 
-
-
-
+class XGBClassifierWithYTransformed(XGBClassifier):
+    def fit(self, X, y, **kwargs):
+        y_transformed = y - 1
+        return super().fit(X, y_transformed, **kwargs)
+ 
+    def predict(self, X):
+        return XGBClassifier.predict(self, X) - 1
+class XGboost(XGBClassifier):
+    def fit(self, X, y):
+        self.le = LabelEncoder()
+        y = self.le.fit_transform(y)
+        return super().fit(X, y)
+ 
+    def predict(self, X):
+        return self.le.inverse_transform(super().predict(X))
+ 
 pipe = make_pipeline(
     transformer,
     KNNImputer(n_neighbors=3),
-    # simple_imputer = SimpleImputer(strategy='mean'),
-    GradientBoostingClassifier(learning_rate=0.16, max_leaf_nodes=5, n_estimators=100)
-    # XGBClassifier(max_depth=5, n_estimators=100, scale_pos_weight=scale_pos_weight, use_label_encoder=False, eval_metric="logloss")
+    XGBClassifierWithYTransformed(max_depth=5, n_estimators=100, scale_pos_weight=1, use_label_encoder=False, eval_metric="logloss")
 )
 
 def get_estimator():
