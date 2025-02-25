@@ -8,7 +8,7 @@ from xgboost import XGBClassifier
 from collections import Counter
 from imblearn.ensemble import BalancedRandomForestClassifier
 from sklearn.preprocessing import LabelEncoder
-
+from sklearn.impute import SimpleImputer
 def fold_time_series(time_point, period, div_period):
     return (time_point -
             (time_point // (period / div_period)) * period / div_period)
@@ -88,7 +88,7 @@ class XGboost(XGBClassifier):
 pipe = make_pipeline(
     transformer,
     KNNImputer(n_neighbors=3),
-    XGBClassifierWithYTransformed(max_depth=5, n_estimators=100, scale_pos_weight=1, use_label_encoder=False, eval_metric="logloss")
+    XGBClassifierWithYTransformed(max_depth=3, n_estimators=40, scale_pos_weight=1, use_label_encoder=False, eval_metric="logloss")
 )
 
 def get_estimator():
